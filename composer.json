@@ -1,5 +1,5 @@
 {
-    "name": "humbldump/gbsignal",
+    "name": "gaziantep-bilisim/onesignal_laravel",
     "description": "Send push notifications using onesignal",
     "type": "library",
     "require": {
