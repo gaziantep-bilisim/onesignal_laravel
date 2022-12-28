@@ -1,8 +1,8 @@
 
 
-# Methods
+# Bildirim Metodları
 
-## Create Notification
+## Bildirim Oluşturma
 
 ```php
 $instance = GBSignal::createNotification(); # Create Notification
@@ -17,26 +17,55 @@ $instance->notification # Adjust the notification
 
 ```
 
-## Send Notification
+## Bildirimi Gönderme
 ```php
-$response = $instance->sendToAll(); # Send To All Users
-$response = $instance->sendToExternal(['external_id1', 'external_id2']); # Send To External Users
-$response = $instance->sendToTag('company_id', '=', [1,2,3,4,5]); # Send To Users by tag
+/*
+Onesignal üzerinde kayıtlı herkes'e gönderir
+*/
+$response = $instance->sendToAll();
+
+/*
+Onesignal üzerinde external id'leri kullanarak bildirim gönderme
+Array Beklemektedir
+Array ürünleri String olmalıdır
+*/
+$response = $instance->sendToExternal(['external_id1', 'external_id2']);
+
+/*
+Onesignal üzerinde kaydedilen tagler'i kullanarak bildirim gönderme
+$key tagin ismi
+$array bu taga için değerler !array beklemektedir
+*/
+$response = $instance->sendToTag($key, '=', $array); //Onesignal e kaydedilen tagları kullanarak bildirim gönderme
 ```
 
-## Delete
-```php
-$oldNotification =  \HumblDump\GBSignal\OneSignal\Notification::query()->first();
-$response = GBSignal::deleteNotification($oldNotification); # Delete Notification (Takes model or OneSignal notification id as string)
-```
+## Bildirim Modeli
+> 	Oluşturulan ve gönderilen bildirimler veritabanında kaydedilir
+> 	Bu oluşturulan modele `HumblDump\GBSignal\OneSignal\Notification` sınıfı üzerinden erişebilirsiniz
 
-## Get
+## Bildirim Bilgilerini Çekme
 ```php
-$response = GBSignal::getNotificationList(); # Get notification list
+use HumblDump\GBSignal\OneSignal\Notification; //modelin sınıfını çek
 
-use HumblDump\GBSignal\OneSignal\Notification;
+/*
+Veri tabanı üzerinden gönderdiğimiz modeli çek
+*/
 $oldNotification =  \HumblDump\GBSignal\OneSignal\Notification::query()->first();
+
+/*
+Metoda çektiğimiz bu modeli aktar
+*/
 $response = GBSignal::getNotification($oldNotification); # Get notification invidual
+
+```
+> $response success ve error dan oluşan bir STDClass
+> $response->success = bir [TIKLA](https://paste.ofcode.org/4PnAg5hzNERVvE86kUbQqS "obj") collection
+
+
+## Bildirim Silme
+```php
+$oldNotification =  \HumblDump\GBSignal\OneSignal\Notification::query()->first();
+$response = GBSignal::deleteNotification($oldNotification); // Veritabanından çekilen notification urununu beklemektedir
 ```
 
 ## Get Device List
