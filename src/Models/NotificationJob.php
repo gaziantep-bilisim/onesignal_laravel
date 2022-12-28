@@ -41,7 +41,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class NotificationJob extends Model
 {
-    use SoftDeletes;
     protected $table = 'gbsignal_notification_jobs';
     protected $fillable = [
         'body',

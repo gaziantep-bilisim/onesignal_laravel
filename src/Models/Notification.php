@@ -33,7 +33,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class Notification extends Model
 {
-    use SoftDeletes;
     protected $table = 'gbsignal_notifications';
     protected $guarded = [];
 

@@ -3,6 +3,7 @@
 
 namespace HumblDump\GBSignal;
 
+use Carbon\Carbon;
 use Generator;
 use GuzzleHttp\Pool;
 use GuzzleHttp\Client;
@@ -159,7 +160,7 @@ class GBSignal
         $this->setAuthorize('GET')->setContentType();
         $this->uri = 'notifications';
 
-        $notification_ids = $finder instanceof NotificationModel ? $finder->jobs->pluck('onesignal_id')->toArray() : [$finder];
+        $notification_ids = $finder instanceof NotificationModel ? $finder->jobs->whereNotNull('onesignal_id')->pluck('onesignal_id')->toArray() : [$finder];
 
         foreach ($notification_ids as $id) {
             $this->request_chunk->push(
@@ -248,8 +249,9 @@ class GBSignal
             );
         }
 
+        $this->updateModel(count($values));
 
-        return $this->send();
+        return collect(['model' => $this->notification_model, 'response' => $this->send()]);
     }
 
     /**
@@ -295,8 +297,9 @@ class GBSignal
             );
         }
 
+        $this->updateModel(count($value));
 
-        return $this->send();
+        return collect(['model' => $this->notification_model, 'response' => $this->send()]);
     }
 
     /**
@@ -336,11 +339,17 @@ class GBSignal
             ])
         );
 
+        $this->updateModel();
 
-        return $this->send();
+        return collect(['model' => $this->notification_model, 'response' => $this->send()]);
     }
 
-    private function send()
+    /**
+     *
+     * This method will send notification to all users in the app
+     *  @return \StdClass<success;error>
+     */
+    private function send(): \StdClass
     {
         $pool = new Pool($this->client, $this->preparePool(), [
             'concurrency' => config('onesignal.pool_size', 10),
@@ -350,19 +359,20 @@ class GBSignal
                  * @var Collection $_response
                  */
                 $_response = collect(json_decode($response->getBody()->getContents(), true));
-                if ($this->uri == 'notifications' && $this->notification_jobs_chunk->isNotEmpty()) {
 
+                if ($this->uri == 'notifications' && $this->notification_jobs_chunk->isNotEmpty()) {
                     $this->notification_jobs_chunk[$index]->update([
                         'status' => true,
                         'job_status' => $_response->has('recipients') && $_response->get('recipients') > 0 ? 'completed' : 'skipped',
                         'recipients' => $_response->has('recipients') ? $_response->get('recipients') : 0,
-                        'onesignal_id' => $_response->has('id') ? $_response->get('id') : null,
+                        'onesignal_id' => $_response->has('id') && $_response->get("id") != "" ? $_response->get('id') : null,
                     ]);
 
                     $_response->put('job_id', $this->notification_jobs_chunk[$index]->id);
                 }
 
-                $this->response_chunk->push($_response);
+                $this->response_chunk->push(json_decode($_response->toJson()));
+
             },
             'rejected' => function (\GuzzleHttp\Exception\ClientException $reason, $index) {
 
@@ -374,7 +384,7 @@ class GBSignal
                     ]);
                 }
 
-                $this->error_chunk->push(json_decode($reason->getResponse()->getBody()->getContents(), true));
+                $this->error_chunk->push(json_decode($reason->getResponse()->getBody()->getContents()));
             },
         ]);
 
@@ -382,10 +392,11 @@ class GBSignal
 
         $promise->wait();
 
-        if ($this->error_chunk->isNotEmpty())
-            return $this->error_chunk;
+        $res = new \stdClass();
 
-        return $this->response_chunk;
+        $res->success = $this->response_chunk;
+        $res->error = $this->error_chunk;
+        return $res;
     }
 
     private function preparePool()
@@ -457,5 +468,16 @@ class GBSignal
 
 
         return $this;
+    }
+
+    private function updateModel($receiverCount = 0){
+        $this->notification_model->update([
+            'title' => property_exists($this->notification->headings, 'en') ? $this->notification->headings->en : null,
+            'content' => property_exists($this->notification->contents, 'en') ? $this->notification->contents->en : null,
+            'send_after' => Carbon::parse($this->notification->send_after),
+            'receiver_count' => $receiverCount,
+        ]);
+
+        return;
     }
 }

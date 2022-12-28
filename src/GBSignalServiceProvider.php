@@ -13,15 +13,32 @@ class GBSignalServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-        $this->publishes([
-            __DIR__ . '/Config/GBSignal.php' => config_path('GBSignal.php'),
-        ]);
 
-        $this->mergeConfigFrom(
-            __DIR__ . '/Config/GBSignal.php', 'GBSignal'
-        );
 
-        $this->loadMigrationsFrom(__DIR__ . '/Database/Migrations/');
+        if($this->app->runningInConsole()){
+
+            // if( !class_exists('GbsignalNotifications') ){
+            //     $this->publishes([
+            //         __DIR__.'/database/Migrations/gbsignal_notification_jobs.php.stub' => database_path('migrations/'.date('Y_m_d_His', time()).'_gbsignal_notification_jobs.php'),
+            //         __DIR__.'/database/Migrations/gbsignal_notifications.php.stub' => database_path('migrations/'.date('Y_m_d_His', time()).'_gbsignal_notifications.php'),
+            //     ], 'migrations');
+            // }
+
+            $this->loadMigrationsFrom(__DIR__ . '/Database/Migrations/');
+
+            $this->publishes([
+                __DIR__ . '/Config/GBSignal.php' => config_path('GBSignal.php'),
+            ]);
+
+            $this->mergeConfigFrom(
+                __DIR__ . '/Config/GBSignal.php', 'GBSignal'
+            );
+
+        }
+
+
+
+        // $this->loadMigrationsFrom(__DIR__ . '/Database/Migrations/');
     }
 
     /**
