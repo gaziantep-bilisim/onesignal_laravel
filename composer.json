@@ -40,5 +40,6 @@
       "sort-packages": true,
       "preferred-install": "dist",
       "optimize-autoloader": true
-    }
+    },
+    "license": "MIT"
 }
