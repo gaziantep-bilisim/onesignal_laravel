@@ -1,6 +1,7 @@
 {
     "name": "gaziantep-bilisim/onesignal_laravel",
     "description": "Send push notifications using Onesignal on Laravel applications.",
+    "type": "library",
     "keywords": [
         "laravel",
         "onesignal",
@@ -11,7 +12,6 @@
         "This package is maintained by Gaziantep Bilisim. Please contact us for any questions.",
         "https://gaziantepbilisim.com.tr"
     ],
-    "type": "library",
     "require": {
         "php": ">=5.4.0",
         "guzzlehttp/guzzle": "^7.5",
