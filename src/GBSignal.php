@@ -13,7 +13,7 @@ use Illuminate\Support\Collection;
 use HumblDump\GBSignal\OneSignal\Notification;
 use HumblDump\GBSignal\Models\Notification as NotificationModel;
 use HumblDump\GBSignal\Models\NotificationJob as NotificationJobModel;
-
+use stdClass;
 
 /**
  * Send push notification with using OneSignal V1 API
@@ -79,7 +79,9 @@ class GBSignal
         $this->notification = new Notification();
 
         // init the model
-        $this->notification_model = NotificationModel::create();
+        if(config('onesignal.use_fallback', false)){
+            $this->notification_model = NotificationModel::create();
+        }
 
         // ? Setle the app id for notification
         $this->notification->setAppId(config('GBSignal.app_id'));
@@ -214,7 +216,7 @@ class GBSignal
         // ? Setle the headers and authorization
         $this->setAuthorize()->setContentType();
 
-        if ($this->notification_model == null) {
+        if (config('onesignal.use_fallback', false) && $this->notification_model == null) {
             $this->notification_model = NotificationModel::create();
         }
 
@@ -224,34 +226,42 @@ class GBSignal
              */
 
             // ? if there is no notification model, create one
-            if ($this->notification_model == null) {
+            if (config('onesignal.use_fallback', false) && $this->notification_model == null) {
                 $this->notification_model = NotificationModel::create();
             }
 
-            /**
-             * @var NotificationJobModel $job
-             */
-            $job = NotificationJobModel::create([
-                'notification_id' => $this->notification_model->id,
-                'body' => collect($this->notification)->filter()->toJson(),
-                'job_status' => 'pending',
-            ]);
+            if(config('onesignal.use_fallback', false)){
+                /**
+                 * @var NotificationJobModel $job
+                 */
+                $job = NotificationJobModel::create([
+                    'notification_id' => $this->notification_model->id,
+                    'body' => collect($this->notification)->filter()->toJson(),
+                    'job_status' => 'pending',
+                ]);
 
-            // ? Add the job to the notification jobs chunk
-            $this->notification_jobs_chunk->push($job);
+                // ? Add the job to the notification jobs chunk
+                $this->notification_jobs_chunk->push($job);
 
-            // ? Add the notification to the request chunk
+                // ? Add the notification to the request chunk
+            }
+            else{
+                $job = new stdClass();
+                $job->body = collect($this->notification)->filter()->toJson();
+            }
+
             $this->request_chunk->push(
                 $this->client->requestAsync('POST', $this->uri, [
                     'body' => $job->body,
                     'headers' => $this->headers,
                 ])
             );
+
         }
 
         $this->updateModel(count($values));
 
-        return collect(['model' => $this->notification_model, 'response' => $this->send()]);
+        return $this->send();
     }
 
     /**
@@ -272,21 +282,29 @@ class GBSignal
              */
 
             // ? if there is no notification model, create one
-            if ($this->notification_model == null) {
+            if (config('onesignal.use_fallback', false) && $this->notification_model == null) {
                 $this->notification_model = NotificationModel::create();
             }
 
-            /**
-             * @var NotificationJobModel $job
-             */
-            $job = NotificationJobModel::create([
-                'notification_id' => $this->notification_model->id,
-                'body' => collect($this->notification)->filter()->toJson(),
-                'job_status' => 'pending',
-            ]);
+            if(config('onesignal.use_fallback', false)){
+                /**
+                 * @var NotificationJobModel $job
+                 */
+                $job = NotificationJobModel::create([
+                    'notification_id' => $this->notification_model->id,
+                    'body' => collect($this->notification)->filter()->toJson(),
+                    'job_status' => 'pending',
+                ]);
 
-            // ? Add the job to the notification jobs chunk
-            $this->notification_jobs_chunk->push($job);
+                // ? Add the job to the notification jobs chunk
+                $this->notification_jobs_chunk->push($job);
+
+
+            }
+            else{
+                $job = new stdClass();
+                $job->body = collect($this->notification)->filter()->toJson();
+            }
 
             // ? Add the notification to the request chunk
             $this->request_chunk->push(
@@ -295,11 +313,12 @@ class GBSignal
                     'headers' => $this->headers,
                 ])
             );
+
         }
 
         $this->updateModel(count($value));
 
-        return collect(['model' => $this->notification_model, 'response' => $this->send()]);
+        return $this->send();
     }
 
     /**
@@ -315,22 +334,29 @@ class GBSignal
         $this->notification->addSegments("All");
 
         // ? if there is no notification model, create one
-        if ($this->notification_model == null) {
+        if (config('onesignal.use_fallback', false) && $this->notification_model == null) {
             $this->notification_model = NotificationModel::create();
         }
 
 
-        /**
-         * @var NotificationJobModel $job
-         */
-        $job = NotificationJobModel::create([
-            'notification_id' => $this->notification_model->id,
-            'body' => collect($this->notification)->filter()->toJson(),
-            'job_status' => 'pending',
-        ]);
+        if(config('onesignal.use_fallback', false)){
+            /**
+             * @var NotificationJobModel $job
+             */
+            $job = NotificationJobModel::create([
+                'notification_id' => $this->notification_model->id,
+                'body' => collect($this->notification)->filter()->toJson(),
+                'job_status' => 'pending',
+            ]);
 
-        // ? Add the job to the notification jobs chunk
-        $this->notification_jobs_chunk->push($job);
+            // ? Add the job to the notification jobs chunk
+            $this->notification_jobs_chunk->push($job);
+
+        }
+        else{
+            $job = new stdClass();
+            $job->body = collect($this->notification)->filter()->toJson();
+        }
 
         $this->request_chunk->push(
             $this->client->requestAsync('POST', $this->uri, [
@@ -341,7 +367,7 @@ class GBSignal
 
         $this->updateModel();
 
-        return collect(['model' => $this->notification_model, 'response' => $this->send()]);
+        return $this->send();
     }
 
     /**
@@ -396,6 +422,12 @@ class GBSignal
 
         $res->success = $this->response_chunk;
         $res->error = $this->error_chunk;
+
+        $this->response_chunk = collect();
+        $this->error_chunk = collect();
+        $this->notification_jobs_chunk = collect();
+        $this->request_chunk = collect();
+
         return $res;
     }
 
@@ -471,6 +503,11 @@ class GBSignal
     }
 
     private function updateModel($receiverCount = 0){
+
+        if(config('onesignal.use_fallback', false) == false){
+            return;
+        }
+
         $this->notification_model->update([
             'title' => property_exists($this->notification->headings, 'en') ? $this->notification->headings->en : null,
             'content' => property_exists($this->notification->contents, 'en') ? $this->notification->contents->en : null,

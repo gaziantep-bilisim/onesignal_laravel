@@ -53,6 +53,16 @@ return [
 
     /*
     |-------------------------------------------------------------------------------------------
+    | use_fallback - Should onesignal write every job to database?
+    |
+    | fallback option for future errors
+    |-------------------------------------------------------------------------------------------
+    |
+   */
+    'use_fallback' => env('ONESIGNAL_USE_FALLBACK', false),
+
+    /*
+    |-------------------------------------------------------------------------------------------
     | Pool_size - Guzzle concurrent pool size
     |
     | This is the number of concurrent requests that will be sent at once on parallel requests.
