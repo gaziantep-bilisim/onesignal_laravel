@@ -27,11 +27,11 @@ class GBSignalServiceProvider extends ServiceProvider
             $this->loadMigrationsFrom(__DIR__ . '/Database/Migrations/');
 
             $this->publishes([
-                __DIR__ . '/Config/gbsignal.php' => config_path('gbsignal.php'),
+                __DIR__ . '/Config/GBSignal.php' => config_path('GBSignal.php'),
             ]);
 
             $this->mergeConfigFrom(
-                __DIR__ . '/Config/gbsignal.php', 'gbsignal'
+                __DIR__ . '/Config/GBSignal.php', 'GBSignal'
             );
 
         }
